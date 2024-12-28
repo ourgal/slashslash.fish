@@ -25,7 +25,16 @@ In each of these tools there's a similar concept to a "root". These scripts also
 
 ## Installing
 
-Copy each of the contents of these folders into `~/.config/fish` (you'll need to make the `slashslash` directory). You might be able to use a plugin manager like fisher, but I haven't tried that workflow yet, so it might be broken.
+### Manual
+
+Copy each of the contents of these folders into `~/.config/fish` (make sure to copy recursively)
+
+### Fisher
+
+I have now confirmed this workflow works, yay!
+```
+fisher install danzimm/slashslash.fish
+```
 
 ## Configuration
 
@@ -77,4 +86,5 @@ Want to expand `//` in more contexts? There's a very rough plugin system, see e.
 
 Not really one, but I want to implement:
 - Better root caching: right now on my M3 MBA cd-ing between git directories takes a non-trivial amount of time. We should be able to detect without any subprocess invocations that we're still inside, or now outside of a git repo. This hasn't been implemented yet because `buck` was the first plugin I made and it doesn't have the same possible optimization (because cd-ing within a buck repo can put you within a new cell, hence `buck root` has to be invalidated/re-called)
+    - I just realized that we're `source`-ing each of these plugins every PWD change. This is bad, LOL. Next step to improve this is to switch from files that are sourced to user defined functions which and enabled by calling `slashslash enable` (this option needs to be implemented)
 - User specified cells. It'd be cool to have `.slashslash_cells` files wherever on disk and they'll automatically be used for expansions, regardless of whether you're in a repo of any sort
