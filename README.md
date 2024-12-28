@@ -67,7 +67,7 @@ slashslash secret_command
 
 ## Plugins
 
-Want to expand `//` in more contexts? There's a very rough plugin system, see e.g. `slashslash/buck_plugin.fish`. Each plugin should return non-0 if it doesn't detect a valid context (e.g. for buck if it doesn't detect a buck workspace, for git no git repo, etc.). The plugin API is as follows (each of these are functions):
+Want to expand `//` in more contexts? There's a very rough plugin system, see e.g. `conf.d/slashslash/buck_plugin.fish`. Each plugin should be placed in `conf.d/slashslash` and return non-0 if it doesn't detect a valid context (e.g. for buck if it doesn't detect a buck workspace, for git no git repo, etc.). The plugin API is as follows (each of these are functions):
 - `__slashslash_root` is the only required function: This doesn't take any args and should print the current root given the user's `$PWD`
 - `__slashslash_resolve_cell` is optional: it tells slashslash how to convert `cell//` to its own path (if unimplemented then `cell//` expands to `"cell/"(__slashslash_root)`). This function accepts a single argument, the name of the parsed cell. You can return non-0 from this function to indicate no cell was found (and fallback to the behavior as if this function wasn't implemented)
 - `__slashslash_resolve_subpath` is optional: it allows manual remapping of `subpath` in a `cell//subpath` expansion. This is used by the `buck` plugin to remap e.g. `foo/bar:baz.bzl` to `foo/bar/baz.bzl` so that you can do e.g. `vim //foo/bar:baz.bzl` (i.e. you can copy strings from load statements directly)

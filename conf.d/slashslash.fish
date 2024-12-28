@@ -6,7 +6,7 @@ slashslash ss cat ls cp rm mv cd zip unzip vim nvim vi buck sl git hg grep ack
 
 set -g slashslash_plugins
 
-for path in ~/.config/fish/slashslash/*_plugin.fish
+for path in ~/.config/fish/conf.d/slashslash/*_plugin.fish
   string match -rq "(?<name>[^/]+)_plugin.fish" -- $path; or continue
   function __slashslash_load_$name --description "Load slashslash plugin $name from $path" --inherit-variable path
     source $path
