@@ -88,3 +88,23 @@ Not really one, but I want to implement:
 - Better root caching: right now on my M3 MBA cd-ing between git directories takes a non-trivial amount of time. We should be able to detect without any subprocess invocations that we're still inside, or now outside of a git repo. This hasn't been implemented yet because `buck` was the first plugin I made and it doesn't have the same possible optimization (because cd-ing within a buck repo can put you within a new cell, hence `buck root` has to be invalidated/re-called)
     - I just realized that we're `source`-ing each of these plugins every PWD change. This is bad, LOL. Next step to improve this is to switch from files that are sourced to user defined functions which and enabled by calling `slashslash enable` (this option needs to be implemented)
 - User specified cells. It'd be cool to have `.slashslash_cells` files wherever on disk and they'll automatically be used for expansions, regardless of whether you're in a repo of any sort
+
+## Contributing
+
+Please do! Glad to accept help, but will respond slowly as time permits. This is a side project, to the extreme.
+
+## NAQBMBAIF
+
+Stands for "Never Asked Questions But Might Be Asked In Future".
+
+### Why only fish?
+
+I don't use any other shell, and don't know if other shells have the required hooks
+
+### Your code is bad
+
+Yep, checks out. But hey, this isn't a question
+
+### Will you support X?
+
+Put up your request in an issue, maybe!
