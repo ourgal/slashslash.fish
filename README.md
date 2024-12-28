@@ -4,6 +4,7 @@ TL;DR These scripts allow you to do
 ```
 ls some_cell//path
 cp foo another//path/
+nvim //README.md
 ```
 
 You get no warranty, good luck.
