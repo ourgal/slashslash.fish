@@ -13,7 +13,7 @@ You get no warranty, good luck.
 In both buck (& bazel I think) there's a concept of a 'cell' which dictates the current "workspace" you're building from (this is helpful because e.g. each cell has its own configuration). When building/running things within buck you refer to the executable/test/library by a "target", e.g. of the form `cell//path/to:target` (henceforth referred to as a fully qualified target). The `cell` part is optional, and will default to most enclosing cell your $PWD is in.
 
 This "qualified target" specification is also used when loading build files, e.g.
-``
+```
 load("@cell//build/helper:super_useful.bzl", "magic")
 ```
 
