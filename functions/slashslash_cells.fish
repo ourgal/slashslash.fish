@@ -1,4 +1,11 @@
-function slashslash_cells --description "Query the currently available cells"
+function slashslash_cells --description "Query the currently available cells. Pass -r/--reload to reload"
+  argparse r/reload -- $argv
+  if set -ql _flag_r
+    __slashslash_load_cells --reset
+    __slashslash_pwd_hook
+    return $status
+  end
+
   if not set -qg __slashslash_current_cells; or not set -qg __slashslash_current_cell_paths
     return 0
   end
