@@ -228,9 +228,14 @@ function __slashslash_complete_cmd -a cur --description "Print completions for a
   string match --quiet -- '-*' $cur && return
   set -l expanded (__slashslash_expand_cmd "$cur")
   if test "$expanded" != "$cur"
-    set -l unexpanded_dirname (string split --right --max 1 / -- "$cur")[1]
-    set -l expanded_dirname (string split --right --max 1 / -- "$expanded")[1]
-    set -l start_idx (math (string length "$expanded_dirname") + 1)
+    set -f unexpanded_dirname (string split --right --max 1 / -- "$cur")[1]
+    if string match -q '*/*' -- "$expanded"
+      set -l expanded_dirname (string split --right --max 1 / -- "$expanded")[1]
+      set -f start_idx (math (string length "$expanded_dirname") + 1)
+    else
+      set -f unexpanded_dirname "$unexpanded_dirname/"
+      set -f start_idx 1
+    end
     for p in (__fish_complete_path $expanded)
       set -l completed (string sub -s $start_idx -- "$p")
       echo $unexpanded_dirname$completed
