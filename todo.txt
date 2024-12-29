@@ -1,0 +1,8 @@
+- cursor is weird on startup
+- move all __ funcs into conf.d/slashslash.fish
+- consider switching from WINCH to USR2
+- implement custom autocomplete (i.e. for buck)
+- implement custom subpath expansion (i.e. for buck)
+- implement global cells
+- implement local custom cells (e.g. inside .sscells)
+- cell autocomplete (bc non buck cells won't get autocomplete on cells)
