@@ -7,9 +7,6 @@ function __slashslash_update_cells --description "Internal func to update the ce
       set -q __slashslash_verbose; and echo "Unable to parse cell: $arg" >&2
       continue
     end
-    if test "$cell" = "//"
-      set cell ""
-    end
     if contains "$cell" $cell_names
       set -q __slashslash_verbose; and echo "Ignoring duplicate '$cell'" >&2
       continue
@@ -17,8 +14,7 @@ function __slashslash_update_cells --description "Internal func to update the ce
     set -af cell_names "$cell"
     set -af cell_paths "$path"
   end
-  set -f n (count $cell_names)
-  test $n -gt 0; or return 0
   string join \n -- $cell_names > /tmp/slashslash_fish_cells_$pid
   string join \n -- $cell_paths > /tmp/slashslash_fish_cell_paths_$pid
+  kill -WINCH $pid
 end
