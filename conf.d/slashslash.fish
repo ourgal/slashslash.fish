@@ -111,9 +111,9 @@ alias ss "eval"
 slashslash ss cat ls cp rm mv cd zip unzip vim nvim vi buck sl git hg grep ack
 
 # Builtin plugins
-slashslash_plugin buck __slashslash_buck
-slashslash_plugin git __slashslash_git
-slashslash_plugin hg __slashslash_hg
+slashslash plugin buck __slashslash_buck
+slashslash plugin git __slashslash_git
+slashslash plugin hg __slashslash_hg
 
 # Load cells for initial PWD
 __slashslash_pwd_hook
