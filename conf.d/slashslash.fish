@@ -74,10 +74,6 @@ function __slashslash_invoke --description 'Expand any // and invoke'
   eval $cmd
 end
 
-function __slashslash_complete --description 'autocomplete callback for // enabled commands'
-  __slashslash_complete_token (commandline --current-token)
-end
-
 function __slashslash_pwd_hook --on-variable PWD --description '// PWD change hook'
   status is-interactive; or return
   set -qg NO_SLASHSLASH; and return

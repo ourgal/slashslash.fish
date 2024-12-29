@@ -15,6 +15,7 @@ function slashslash --description 'Initialize // handling for the specified comm
     echo "  disable -- disable // expansion on a command"
     echo "  plugin -- enable/disable/list plugins"
     echo "  expand -- expand //"
+    echo "  complete -- print completions of a given token after expanding //"
     echo
     echo "Defaults to 'enable' if not subcommand specified"
     return 0
@@ -44,7 +45,7 @@ function __slashslash_disable_cmd
     # Restore original definition
     __slashslash_restore_$arg
     # Disable completion
-    complete -e -c $arg -a '(__slashslash_complete)'
+    complete -e -c $arg -a '(__slashslash_complete_cmd (commandline --current-token))'
     complete -e -c $arg --no-files
     complete -e -c $arg --wraps "__slashslash_invoke __slashslash_real_$arg"
   end
@@ -78,7 +79,7 @@ function __slashslash_enable_cmd
       end
     end
     alias "$arg" "__slashslash_invoke __slashslash_real_$arg"
-    complete -c $arg -a '(__slashslash_complete)'
+    complete -c $arg -a '(__slashslash_complete_cmd (commandline --current-token))'
     complete -c $arg --no-files  # Our completion handler will handle this
   end
 end
@@ -221,4 +222,21 @@ function __slashslash_expand_cmd --description "Expand // based on current cells
     string match -rq '/$' -- "$abs"; and echo -n "/"
     echo
   end
+end
+
+function __slashslash_complete_cmd -a cur --description "Print completions for a token after expanding //"
+  string match --quiet -- '-*' $cur && return
+  set -l expanded (__slashslash_expand_cmd "$cur")
+  if test "$expanded" != "$cur"
+    set -l unexpanded_dirname (string split --right --max 1 / -- "$cur")[1]
+    set -l expanded_dirname (string split --right --max 1 / -- "$expanded")[1]
+    set -l start_idx (math (string length "$expanded_dirname") + 1)
+    for p in (__fish_complete_path $expanded)
+      set -l completed (string sub -s $start_idx -- "$p")
+      echo $unexpanded_dirname$completed
+    end
+  else
+    __fish_complete_path $cur
+  end
+  return 0
 end
