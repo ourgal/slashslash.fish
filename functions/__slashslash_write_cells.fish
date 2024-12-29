@@ -4,11 +4,11 @@ function __slashslash_write_cells --description "Internal func to update the cel
   string match -rq 'fish$' -- "$pid_info[2]"; or return 1
   for arg in $argv[2..]
     if not string match -rq '^\s*(?<cell>([a-zA-Z_0-9-]+|//))\s*:\s*(?<path>[^\s]+)$' -- "$arg"
-      set -q __slashslash_verbose; and echo "Unable to parse cell: $arg" >&2
+      __slashslash_verbose "Unable to parse cell: $arg"
       continue
     end
     if contains "$cell" $cell_names
-      set -q __slashslash_verbose; and echo "Ignoring duplicate '$cell'" >&2
+      __slashslash_verbose "Ignoring duplicate '$cell'"
       continue
     end
     set -af cell_names "$cell"

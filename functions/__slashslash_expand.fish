@@ -1,12 +1,12 @@
 function __slashslash_expand --description "Expand // based on current directory"
   if not set -qg __slashslash_current_cells; or not set -qg __slashslash_current_cell_paths
-    set -qg __slashslash_verbose; and echo "No loaded cells" >&2
+    __slashslash_verbose "No loaded cells"
     string join \n -- $argv
     return 0
   end
 
   for arg in $argv
-    set -qg __slashslash_verbose; and echo "processing $arg" >&2
+    __slashslash_verbose "processing $arg"
 
     # Is there // somewhere in this arg?
     if not string match -rq '^(?<cell>[^/\s]*)//(?<subpath>[^\s]*)$' -- $arg
@@ -23,12 +23,12 @@ function __slashslash_expand --description "Expand // based on current directory
       echo "$arg"
       continue
     end
-    set -qg __slashslash_verbose; and echo "idx=$idx" >&2
+    __slashslash_verbose "idx=$idx"
 
     set -l root $__slashslash_current_cell_paths[$idx]
-    set -qg __slashslash_verbose; and echo "root=$root" >&2
+    __slashslash_verbose "root=$root"
     set -l abs "$root/$subpath"
-    set -qg __slashslash_verbose; and echo "abs=$abs" >&2
+    __slashslash_verbose "abs=$abs"
 
     echo -n (realpath -s --relative-to=. "$abs")
     # Use abs instead of $subpath so that when $subpath is empty
