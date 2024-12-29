@@ -13,6 +13,5 @@ function __slashslash_complete_token --description "Underlying impl of __slashsl
   else
     __fish_complete_path $cur
   end
-  functions -q __slashslash_plugin_complete; and __slashslash_plugin_complete "$cur"
   return 0
 end
