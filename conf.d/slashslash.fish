@@ -1,5 +1,7 @@
+status is-interactive; or return
+
 function __slashslash_verbose
-  set -gq slashslash_verbose; and echo $argv >&2
+  set -q slashslash_verbose; and echo $argv >&2
 end
 
 function __slashslash_buck
@@ -44,12 +46,9 @@ function __slashslash_write_cells --description "Internal func to update the cel
   end
   string join \n -- $cell_names > /tmp/slashslash_fish_cells_$pid
   string join \n -- $cell_paths > /tmp/slashslash_fish_cell_paths_$pid
-  kill -WINCH $pid
 end
 
-status is-interactive; or return
-
-function __slashslash_load_cells --description "Internal func to load cells from disk" --on-signal WINCH
+function __slashslash_load_cells --description "Internal func to load cells from disk"
   argparse r/reset -- $argv
   if set -ql _flag_r
     set -e __slashslash_current_cells
@@ -69,12 +68,31 @@ function __slashslash_load_cells --description "Internal func to load cells from
 end
 
 function __slashslash_invoke --description 'Expand any // and invoke'
-  set -f cmd (slashslash expand (string escape -- $argv))
-  __slashslash_verbose "//> $cmd"
-  eval $cmd
+  if not status is-interactive; or status is-command-substitution
+    $argv
+  else
+    set -f cmd (slashslash expand (string escape -- $argv))
+    __slashslash_verbose "//> $cmd"
+    eval $cmd
+  end
+end
+
+function __slashslash_write_cell_script
+  functions --no-details __slashslash_verbose
+  functions --no-details __slashslash_write_cells
+  for arg in $argv
+    functions --no-details "$arg"
+  end
+  if set -q slashslash_verbose
+    echo 'set -g slashslash_verbose'
+  end
+  echo "__slashslash_write_cells $fish_pid $argv"
 end
 
 function __slashslash_pwd_hook --on-variable PWD --description '// PWD change hook'
+  if not status is-interactive; or status is-command-substitution
+    return
+  end
   status is-interactive; or return
   set -qg NO_SLASHSLASH; and return
   set -qg __slashslash_plugins; or return
@@ -88,16 +106,25 @@ function __slashslash_pwd_hook --on-variable PWD --description '// PWD change ho
   if set -q slashslash_verbose
     set -f inherited_env slashslash_verbose=1
   end
-  if set -q slashslash_sync
-    env $inherited_env fish -c "__slashslash_write_cells $fish_pid $plugin_funcs"
-  else
-    env $inherited_env fish -c "__slashslash_write_cells $fish_pid $plugin_funcs" &
+
+  begin
+    set -l IFS
+    set -l shell_exe (status fish-path)
+    set -l shell_script (__slashslash_write_cell_script $plugin_funcs)
+
+    __slashslash_verbose "Running under $shell_exe: `$shell_script`"
+    if set -q slashslash_sync
+      $shell_exe --no-config -c "$shell_script"
+    else
+      $shell_exe --no-config -c "$shell_script" &; disown
+    end
   end
 end
 
 function __slashslash_exit --on-event fish_exit
-  rm /tmp/slashslash_fish_cells_$fish_pid
-  rm /tmp/slashslash_fish_cell_paths_$fish_pid
+  for f in /tmp/slashslash_fish_cells_$fish_pid /tmp/slashslash_fish_cell_paths_$fish_pid
+    test -f $f; and rm $f
+  end
 end
 
 # User can run e.g. `ss //foo/bar`

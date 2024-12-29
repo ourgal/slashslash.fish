@@ -191,6 +191,8 @@ function __slashslash_expand_cmd --description "Expand // based on current cells
     return 0
   end
 
+  __slashslash_load_cells
+
   for arg in $argv
     __slashslash_verbose "processing $arg"
 
@@ -263,6 +265,8 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     __slashslash_pwd_hook
     return $status
   end
+
+  __slashslash_load_cells
 
   if not set -qg __slashslash_current_cells; or not set -qg __slashslash_current_cell_paths
     return 0
