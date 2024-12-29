@@ -1,7 +1,7 @@
 function __slashslash_complete_token --description "Underlying impl of __slashslash_complete"
   set -l cur "$argv[1]"
   string match --quiet -- '-*' $cur && return
-  set -l expanded (__slashslash_expand "$cur")
+  set -l expanded (slashslash expand "$cur")
   if test "$expanded" != "$cur"
     set -l unexpanded_dirname (string split --right --max 1 / -- "$cur")[1]
     set -l expanded_dirname (string split --right --max 1 / -- "$expanded")[1]

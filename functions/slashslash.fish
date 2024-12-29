@@ -1,8 +1,10 @@
 function slashslash --description 'Initialize // handling for the specified commands/functions'
-  set subcmds plugin enable disable
-  if test (count $argv) -ne 0; and set vidx (contains -i $argv[1] $subcmds)
-    __slashslash_$argv[1]_cmd $argv[2..]
-    return $status
+  if test (count $argv) -ne 0
+    set subcmd __slashslash_$argv[1]_cmd
+    if functions -q $subcmd
+      $subcmd $argv[2..]
+      return $status
+    end
   end
 
   argparse h/help -- $argv; or return
@@ -12,6 +14,7 @@ function slashslash --description 'Initialize // handling for the specified comm
     echo "  enable -- enable // expansion on a command"
     echo "  disable -- disable // expansion on a command"
     echo "  plugin -- enable/disable/list plugins"
+    echo "  expand -- expand //"
     echo
     echo "Defaults to 'enable' if not subcommand specified"
     return 0
@@ -178,4 +181,44 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
     set -q __slashslash_verbose; and echo "Unregistered $name"
   end
   return 0
+end
+
+function __slashslash_expand_cmd --description "Expand // based on current cells"
+  if not set -qg __slashslash_current_cells; or not set -qg __slashslash_current_cell_paths
+    __slashslash_verbose "No loaded cells"
+    string join \n -- $argv
+    return 0
+  end
+
+  for arg in $argv
+    __slashslash_verbose "processing $arg"
+
+    # Is there // somewhere in this arg?
+    if not string match -rq '^(?<cell>[^/\s]*)//(?<subpath>[^\s]*)$' -- $arg
+      echo "$arg"
+      continue
+    end
+
+    if test -z "$cell"
+      # Default to 'root'
+      set cell "//"
+    end
+
+    if not set idx (contains -i "$cell" $__slashslash_current_cells)
+      echo "$arg"
+      continue
+    end
+    __slashslash_verbose "idx=$idx"
+
+    set -l root $__slashslash_current_cell_paths[$idx]
+    __slashslash_verbose "root=$root"
+    set -l abs "$root/$subpath"
+    __slashslash_verbose "abs=$abs"
+
+    echo -n (realpath -s --relative-to=. "$abs")
+    # Use abs instead of $subpath so that when $subpath is empty
+    # the match succeeds and we correctly get a trailing slash.
+    string match -rq '/$' -- "$abs"; and echo -n "/"
+    echo
+  end
 end
