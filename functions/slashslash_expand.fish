@@ -1,4 +1,4 @@
-function __slashslash_expand --description "Expand // based on current directory"
+function slashslash_expand --description "Expand // based on current cells"
   if not set -qg __slashslash_current_cells; or not set -qg __slashslash_current_cell_paths
     __slashslash_verbose "No loaded cells"
     string join \n -- $argv
