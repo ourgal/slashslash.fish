@@ -1,4 +1,4 @@
-function __slashslash_update_cells --description "Internal func to update the cells available for a given process" -a pid
+function __slashslash_write_cells --description "Internal func to update the cells available for a given process" -a pid
   set -l pid_info (ps -p "$pid" 2>/dev/null); or return 1
   test (count $pid_info) -eq 2; or return 1
   string match -rq 'fish$' -- "$pid_info[2]"; or return 1
