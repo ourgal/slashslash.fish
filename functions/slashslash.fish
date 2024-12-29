@@ -85,7 +85,7 @@ function __slashslash_enable_cmd
 end
 
 function __slashslash_plugin_cmd --description "Enable/disable slashslash plugins"
-  argparse h/help u/unregister l/list v/verbose -- $argv; or return
+  argparse h/help u/unregister l/list v/verbose c/complete= -- $argv; or return
 
   if set -ql _flag_l
     if not set -qg __slashslash_plugins
@@ -114,10 +114,13 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
   if set -ql _flag_h; or test (count $argv) -eq 0
     echo "Usage:"
     echo "slashslash plugin [-h|--help]"
-    echo "slashslash plugin [-u|--unregister] NAME CALLBACK"
+    echo "slashslash plugin [-c|--complete COMPLETE_CALLBACK] NAME CALLBACK"
+    echo "slashslash plugin -u|--unregister NAME"
     echo "slashslash plugin -l|--list -v|--verbose"
     echo
     echo "The default command registers/unregisters a plugin named NAME with callback CALLBACK."
+    echo "The optional -c|--complete flag specifies a callback to be called with a token that"
+    echo "should be autocompleted."
     echo
     echo "When -l|--list is passed then the currently registered plugins are printed. When"
     echo "-v|--verbose is also passed then the plugin definitions will be printed as well."
@@ -129,7 +132,7 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
 
   if not set -ql _flag_u
     if test (count $argv) -ne 2
-      echo "Usage: slashslash plugin NAME CALLBACK" >&2
+      echo "Usage: slashslash plugin [-c|--complete COMPLETE_CALLBACK] NAME CALLBACK" >&2
       return 1
     end
 
@@ -153,6 +156,16 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
       echo "I: Overwriting $name, was "$$function_key
     end
     set -g $function_key $callback
+
+    if set -q _flag_c
+      if not functions -q "$_flag_c"
+        echo -n "W: Ignoring $_flag_c: not a function. "(type $_flag_c) >&2
+      else
+        set -g __slashslash_completer_$name "$_flag_c"
+        set -ga __slashslash_completers "$name"
+      end
+    end
+
     set -q __slashslash_verbose; and echo "Registered $name > $callback"
   else
     if test (count $argv) -ne 1
@@ -179,12 +192,19 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
       return 1
     end
     set -e $function_key
+    set -q __slashslash_completer_$name; and set -e __slashslash_completer_$name
+    if set -f cidx (contains -i "$name" $__slashslash_completers)
+      set -e __slashslash_completers[$cidx]
+    end
+
     set -q __slashslash_verbose; and echo "Unregistered $name"
   end
   return 0
 end
 
 function __slashslash_expand_cmd --description "Expand // based on current cells"
+  __slashslash_load_cells
+
   if not set -qg __slashslash_current_cells; or not set -qg __slashslash_current_cell_paths
     __slashslash_verbose "No loaded cells"
     string join \n -- $argv
@@ -244,6 +264,9 @@ function __slashslash_complete_cmd -a cur --description "Print completions for a
     end
   else
     __fish_complete_path $cur
+  end
+  for completer in $__slashslash_completers
+    $completer "$cur"
   end
   return 0
 end
