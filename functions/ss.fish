@@ -217,15 +217,22 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
 end
 
 function __slashslash_expand_cmd --description "Expand // based on current cells"
-  argparse -i f/force -- $argv
+  argparse -i f/force e -- $argv
+
+  if set -q _flag_e
+    set -f res 1
+  else
+    set -f res 0
+  end
+
   if not set -q _flag_f; and status is-command-substitution
     string join \n -- $argv
-    return 0
+    return $res
   end
 
   if set -q __slashslash_expanding
     string join \n -- $argv
-    return 0
+    return $res
   end
   set -g __slashslash_expanding
 
@@ -235,7 +242,7 @@ function __slashslash_expand_cmd --description "Expand // based on current cells
     __slashslash_verbose "No loaded cells"
     string join \n -- $argv
     set -e __slashslash_expanding
-    return 0
+    return $res
   end
 
   test (realpath .) != "$PWD"; and set needs_abs
@@ -285,8 +292,11 @@ function __slashslash_expand_cmd --description "Expand // based on current cells
     # the match succeeds and we correctly get a trailing slash.
     string match -rq '/$' -- "$abs"; and echo -n "/"
     echo
+
+    set -f res 0
   end
   set -e __slashslash_expanding
+  return $res
 end
 
 function __slashslash_complete_cmd -a cur --description "Print completions for a token after expanding //"
