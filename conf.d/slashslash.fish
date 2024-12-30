@@ -53,11 +53,13 @@ function __slashslash_write_cells --description "Internal func to update the cel
       set -af cell_plugin_names "$plugin_name"
     end
   end
-  string join \n -- $cell_names > /tmp/slashslash_fish_cells_$pid
-  string join \n -- $cell_paths >> /tmp/slashslash_fish_cells_$pid
-  string join \n -- $cell_plugin_names >> /tmp/slashslash_fish_cells_$pid
-  count $cell_names >> /tmp/slashslash_fish_cells_$pid
-  echo $PWD >> /tmp/slashslash_fish_cells_$pid
+  set scratch "/tmp/.slashslash_fish_cells_$pid.tmp"
+  string join \n -- $cell_names > "$scratch"
+  string join \n -- $cell_paths >> "$scratch"
+  string join \n -- $cell_plugin_names >> "$scratch"
+  count $cell_names >> "$scratch"
+  echo $PWD >> "$scratch"
+  mv "$scratch" /tmp/slashslash_fish_cells_$pid
   __slashslash_verbose "Successfully loaded cells for $PWD"
 end
 
