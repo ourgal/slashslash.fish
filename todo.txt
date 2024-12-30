@@ -1,4 +1,3 @@
-- implement custom autocomplete (i.e. for buck)
 - implement custom subpath expansion (i.e. for buck)
 - implement global cells
 - implement local custom cells (e.g. inside .sscells)
