@@ -1,3 +1,4 @@
+- dont reload cells if pwd hasn't changed
 - implement custom autocomplete (i.e. for buck)
 - implement custom subpath expansion (i.e. for buck)
 - implement global cells

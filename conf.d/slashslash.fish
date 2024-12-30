@@ -4,27 +4,6 @@ function __slashslash_verbose
   set -q slashslash_verbose; and echo $argv >&2
 end
 
-function __slashslash_buck
-  type -q buck; or return
-  set -l root (buck root 2>/dev/null); or return
-  echo "//: $root"
-  buck audit cell 2>/dev/null
-end
-
-function __slashslash_git
-  set root (git rev-parse --show-toplevel 2>/dev/null); or return
-  echo "//:$root"
-end
-
-function __slashslash_hg
-  if type -q sl
-    set root (sl root 2>/dev/null); or return 0
-  else if type -q hg
-    set root (hg root 2>/dev/null); or return 0
-  end
-  echo "//:$root"
-end
-
 function __slashslash_write_cells --description "Internal func to update the cells available for a given process" -a pid
   set -l pid_info (ps -p "$pid" 2>/dev/null); or return 1
   test (count $pid_info) -eq 2; or return 1
@@ -36,7 +15,7 @@ function __slashslash_write_cells --description "Internal func to update the cel
         __slashslash_verbose "Unable to parse cell: $line"
         continue
       end
-      if contains "$cell" $cell_names
+      if contains -- "$cell" $cell_names
         __slashslash_verbose "Ignoring duplicate '$cell'"
         continue
       end
@@ -56,8 +35,13 @@ function __slashslash_load_cells --description "Internal func to load cells from
     return 0
   end
 
-  set -l cells (cat /tmp/slashslash_fish_cells_$fish_pid 2>/dev/null)
   set -l paths (cat /tmp/slashslash_fish_cell_paths_$fish_pid 2>/dev/null)
+  for cell in (cat /tmp/slashslash_fish_cells_$fish_pid 2>/dev/null)
+    if not string match -rq '.*//$' -- $cell
+      set cell "$cell//"
+    end
+    set -a cells "$cell"
+  end
   if test (count $cells) -ne (count $paths)
     __slashslash_verbose "Mismatch number of cells and paths"
     return 1
@@ -68,13 +52,9 @@ function __slashslash_load_cells --description "Internal func to load cells from
 end
 
 function __slashslash_invoke --description 'Expand any // and invoke'
-  if not status is-interactive; or status is-command-substitution
-    $argv
-  else
-    set -f cmd (slashslash expand (string escape -- $argv))
-    __slashslash_verbose "//> $cmd"
-    eval $cmd
-  end
+  set -f cmd (slashslash expand (string escape -- $argv))
+  __slashslash_verbose "//> $cmd"
+  eval $cmd
 end
 
 function __slashslash_write_cell_script
@@ -90,10 +70,6 @@ function __slashslash_write_cell_script
 end
 
 function __slashslash_pwd_hook --on-variable PWD --description '// PWD change hook'
-  if not status is-interactive; or status is-command-substitution
-    return
-  end
-  status is-interactive; or return
   set -qg NO_SLASHSLASH; and return
   set -qg __slashslash_plugins; or return
 
@@ -134,7 +110,32 @@ alias ss "eval"
 slashslash ss cat ls cp rm mv cd zip unzip vim nvim vi buck sl git hg grep ack
 
 # Builtin plugins
-slashslash plugin buck __slashslash_buck
+function __slashslash_buck_complete -a cur
+  command buck complete --target="$cur" 2>/dev/null | command grep -v ':$'
+end
+
+function __slashslash_buck
+  type -q buck; or return
+  set -l root (buck root 2>/dev/null); or return
+  echo "//: $root"
+  buck audit cell 2>/dev/null
+end
+
+function __slashslash_git
+  set root (git rev-parse --show-toplevel 2>/dev/null); or return
+  echo "//:$root"
+end
+
+function __slashslash_hg
+  if type -q sl
+    set root (sl root 2>/dev/null); or return 0
+  else if type -q hg
+    set root (hg root 2>/dev/null); or return 0
+  end
+  echo "//:$root"
+end
+
+slashslash plugin buck __slashslash_buck -c __slashslash_buck_complete
 slashslash plugin git __slashslash_git
 slashslash plugin hg __slashslash_hg
 

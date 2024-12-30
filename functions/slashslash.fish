@@ -147,7 +147,7 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
     if not set -qg __slashslash_plugins
       set -g __slashslash_plugins
     end
-    if not contains "$name" $__slashslash_plugins
+    if not contains -- "$name" $__slashslash_plugins
       set -ga __slashslash_plugins "$name"
     end
 
@@ -179,7 +179,7 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
       return 1
     end
 
-    if not set -f idx (contains -i "$name" $__slashslash_plugins)
+    if not set -f idx (contains -i -- "$name" $__slashslash_plugins)
       echo "W: $name never registered, ignoring" >&2
       return 1
     end
@@ -193,7 +193,7 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
     end
     set -e $function_key
     set -q __slashslash_completer_$name; and set -e __slashslash_completer_$name
-    if set -f cidx (contains -i "$name" $__slashslash_completers)
+    if set -f cidx (contains -i -- "$name" $__slashslash_completers)
       set -e __slashslash_completers[$cidx]
     end
 
@@ -203,31 +203,37 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
 end
 
 function __slashslash_expand_cmd --description "Expand // based on current cells"
+  if set -q __slashslash_expanding
+    string join \n -- $argv
+    return 0
+  end
+  set -g __slashslash_expanding
+
   __slashslash_load_cells
 
   if not set -qg __slashslash_current_cells; or not set -qg __slashslash_current_cell_paths
     __slashslash_verbose "No loaded cells"
     string join \n -- $argv
+    set -e __slashslash_expanding
     return 0
   end
 
   __slashslash_load_cells
 
   for arg in $argv
+    if string match --quiet -- '-*' $arg
+      echo "$arg"
+      continue
+    end
     __slashslash_verbose "processing $arg"
 
     # Is there // somewhere in this arg?
-    if not string match -rq '^(?<cell>[^/\s]*)//(?<subpath>[^\s]*)$' -- $arg
+    if not string match -rq '^(?<cell>[^/\s]*//)(?<subpath>[^\s]*)$' -- $arg
       echo "$arg"
       continue
     end
 
-    if test -z "$cell"
-      # Default to 'root'
-      set cell "//"
-    end
-
-    if not set idx (contains -i "$cell" $__slashslash_current_cells)
+    if not set idx (contains -i -- "$cell" $__slashslash_current_cells)
       echo "$arg"
       continue
     end
@@ -244,6 +250,7 @@ function __slashslash_expand_cmd --description "Expand // based on current cells
     string match -rq '/$' -- "$abs"; and echo -n "/"
     echo
   end
+  set -e __slashslash_expanding
 end
 
 function __slashslash_complete_cmd -a cur --description "Print completions for a token after expanding //"
@@ -262,11 +269,17 @@ function __slashslash_complete_cmd -a cur --description "Print completions for a
       set -l completed (string sub -s $start_idx -- "$p")
       echo $unexpanded_dirname$completed
     end
+    for completer_name in $__slashslash_completers
+      set -l completer __slashslash_completer_$completer_name
+      set -q $completer; and $$completer "$cur"
+    end
   else
     __fish_complete_path $cur
-  end
-  for completer in $__slashslash_completers
-    $completer "$cur"
+    for cell_name in $__slashslash_current_cells
+      if test (string sub --length (string length -- "$cur") -- $cell_name) = "$cur"
+        echo $cell_name
+      end
+    end
   end
   return 0
 end
