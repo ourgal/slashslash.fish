@@ -45,26 +45,26 @@ You get no warranty, good luck.
 
 ### Global
 
-You can define a global cell (meaning it exists no matter what your PWD is) via
-```
-ss cells -a new_cell /path/to/whatever
-```
-See `ss cells --help` for more info.
+#### Static
 
-### Local
-
-You can define local cells via dotfiles named `.ss`. The contents of each file should be of the form
+You can define static cells via `.ss` files. By default `$HOME/.ss` will be loaded if it exists. Otherwise any `.ss` file in your `PWD` or any parent directory will be used as well (the union of all defined cells will be used). Each `.ss` file should look like
 ```
 cell_name : cell_path
 cell_name2 : cell_path2
 ```
-Each line defines a new cell. Each path can be relative, which will be resolved relative to the file's containing directory, or absolute.
-
 You can optionally specify a priority, too by appending it to the end of the line after a space, e.g.
 ```
 special_cell : special/path 10000
 ```
-See `ss cells --help` for more info about priority.
+This is useful when multiple `.ss` files define the same cell. See `ss cells --help` for more info about priority (including the default priority for the builtin plugins).
+
+#### Dynamic
+
+You can define a (dynamic) global cell (meaning it exists no matter what your PWD is) via
+```
+ss cells -a new_cell /path/to/whatever
+```
+See `ss cells --help` for more info.
 
 ### buck
 
