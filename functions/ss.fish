@@ -203,7 +203,13 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
 end
 
 function __slashslash_expand_cmd --description "Expand // based on current cells"
-  if set -q __slashslash_expanding; or status is-command-substitution
+  argparse -i f/force -- $argv
+  if not set -q _flag_f; and status is-command-substitution
+    string join \n -- $argv
+    return 0
+  end
+
+  if set -q __slashslash_expanding
     string join \n -- $argv
     return 0
   end
@@ -255,7 +261,7 @@ end
 
 function __slashslash_complete_cmd -a cur --description "Print completions for a token after expanding //"
   string match --quiet -- '-*' $cur && return
-  set -l expanded (__slashslash_expand_cmd "$cur")
+  set -l expanded (__slashslash_expand_cmd -f "$cur")
   if test "$expanded" != "$cur"
     set -f unexpanded_dirname (string split --right --max 1 / -- "$cur")[1]
     if string match -q '*/*' -- "$expanded"
