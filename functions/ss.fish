@@ -85,7 +85,7 @@ function __slashslash_enable_cmd
 end
 
 function __slashslash_plugin_cmd --description "Enable/disable slashslash plugins"
-  argparse h/help u/unregister l/list v/verbose c/complete= -- $argv; or return
+  argparse h/help u/unregister l/list v/verbose c/complete= s/subpath= -- $argv; or return
 
   if set -ql _flag_l
     if not set -qg __slashslash_plugins
@@ -114,13 +114,13 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
   if set -ql _flag_h; or test (count $argv) -eq 0
     echo "Usage:"
     echo "slashslash plugin [-h|--help]"
-    echo "slashslash plugin [-c|--complete COMPLETE_CALLBACK] NAME CALLBACK"
+    echo "slashslash plugin [-c|--complete COMPLETE_CALLBACK] [-s|--subpath SUBPATH_CALLBACK] NAME CALLBACK"
     echo "slashslash plugin -u|--unregister NAME"
     echo "slashslash plugin -l|--list -v|--verbose"
     echo
     echo "The default command registers/unregisters a plugin named NAME with callback CALLBACK."
     echo "The optional -c|--complete flag specifies a callback to be called with a token that"
-    echo "should be autocompleted."
+    echo "should be autocompleted. If -s|--subpath is specified then it will be called to"
     echo
     echo "When -l|--list is passed then the currently registered plugins are printed. When"
     echo "-v|--verbose is also passed then the plugin definitions will be printed as well."
@@ -166,6 +166,14 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
       end
     end
 
+    if set -q _flag_s
+      if not functions -q "$_flag_s"
+        echo -n "W: Ignoring $_flag_s: not a function. "(type $_flag_s) >&2
+      else
+        set -g __slashslash_subpather_$name "$_flag_c"
+      end
+    end
+
     set -q __slashslash_verbose; and echo "Registered $name > $callback"
   else
     if test (count $argv) -ne 1
@@ -196,6 +204,7 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
     if set -f cidx (contains -i -- "$name" $__slashslash_completers)
       set -e __slashslash_completers[$cidx]
     end
+    set -q __slashslash_subpather_$name; and set -e __slashslash_subpather_$name
 
     set -q __slashslash_verbose; and echo "Unregistered $name"
   end
