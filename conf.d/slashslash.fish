@@ -1,5 +1,7 @@
 status is-interactive; or return
 
+set -g __slashslash_init
+
 function __slashslash_verbose
   set -q slashslash_verbose; and echo $argv >&2
 end
@@ -70,6 +72,7 @@ function __slashslash_load_cells --description "Internal func to load cells from
     set -e __slashslash_current_cell_paths
     set -e __slashslash_current_cell_plugin_names
     set -e __slashslash_loaded_pwd
+    command rm -f /tmp/slashslash_fish_cells_$fish_pid 2>/dev/null
     return 0
   end
 
@@ -137,8 +140,10 @@ function __slashslash_gen_write_cells_script -a n_plugins
 end
 
 function __slashslash_pwd_hook --on-variable PWD --description '// PWD change hook'
-  set -qg NO_SLASHSLASH; and return
-  set -qg __slashslash_plugins; or return
+  if set -q NO_SLASHSLASH; or not set -q __slashslash_plugins; or set -q __slashslash_init
+    __slashslash_verbose "Not running hook, disabled"
+    return
+  end
   test "$__slashslash_loaded_pwd" = "$PWD"; and return
 
   for plugin in $__slashslash_plugins
@@ -169,7 +174,7 @@ function __slashslash_pwd_hook --on-variable PWD --description '// PWD change ho
 end
 
 function __slashslash_exit --on-event fish_exit
-  test -f "/tmp/slashslash_fish_cells_$fish_pid"; and rm -f "/tmp/slashslash_fish_cells_$fish_pid"
+  test -f "/tmp/slashslash_fish_cells_$fish_pid"; and command rm -f "/tmp/slashslash_fish_cells_$fish_pid"
 end
 
 # User can run e.g. `!! //foo/bar`
@@ -234,4 +239,5 @@ ss plugin global __slashslash_global_cell_plugin
 ss plugin dotfile __slashslash_dotfile_plugin
 
 # Load cells for initial PWD
+set -e __slashslash_init
 __slashslash_pwd_hook

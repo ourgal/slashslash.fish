@@ -208,6 +208,8 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
 
     set -q __slashslash_verbose; and echo "Unregistered $name"
   end
+  __slashslash_load_cells -r
+  __slashslash_pwd_hook
   return 0
 end
 
@@ -370,6 +372,8 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     end
 
     set -ga __slashslash_global_cells "$cell_name : $cell_path $cell_priority"
+    __slashslash_load_cells -r
+    __slashslash_pwd_hook
     return 0
   else if set -ql _flag_d
     set cell_name $argv[1]
@@ -388,6 +392,8 @@ function __slashslash_cells_cmd --description "Query the currently available cel
       if string match -rq "^$cell_name\s" -- $spec
         __slashslash_verbose "Deleting cell spec: $spec"
         set -e __slashslash_global_cells[$idx]
+        __slashslash_load_cells -r
+        __slashslash_pwd_hook
         return 0
       end
     end
