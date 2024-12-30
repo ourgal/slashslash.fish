@@ -1,4 +1,4 @@
-- dont reload cells if pwd hasn't changed
+- rename slashslash function to ss, rename ss eval wrapper to !!
 - implement custom autocomplete (i.e. for buck)
 - implement custom subpath expansion (i.e. for buck)
 - implement global cells

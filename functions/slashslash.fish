@@ -203,7 +203,7 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
 end
 
 function __slashslash_expand_cmd --description "Expand // based on current cells"
-  if set -q __slashslash_expanding
+  if set -q __slashslash_expanding; or status is-command-substitution
     string join \n -- $argv
     return 0
   end

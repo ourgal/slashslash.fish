@@ -35,6 +35,8 @@ function __slashslash_load_cells --description "Internal func to load cells from
     return 0
   end
 
+  test "$__slashslash_loaded_pwd" = "$PWD"; and return
+
   set -l paths (cat /tmp/slashslash_fish_cell_paths_$fish_pid 2>/dev/null)
   for cell in (cat /tmp/slashslash_fish_cells_$fish_pid 2>/dev/null)
     if not string match -rq '.*//$' -- $cell
@@ -48,6 +50,7 @@ function __slashslash_load_cells --description "Internal func to load cells from
   end
   set -g __slashslash_current_cells $cells
   set -g __slashslash_current_cell_paths $paths
+  set __slashslash_loaded_pwd "$PWD"
   return 0
 end
 
@@ -72,6 +75,7 @@ end
 function __slashslash_pwd_hook --on-variable PWD --description '// PWD change hook'
   set -qg NO_SLASHSLASH; and return
   set -qg __slashslash_plugins; or return
+  test "$__slashslash_loaded_pwd" = "$PWD"; and return
 
   for plugin in $__slashslash_plugins
     set -l function_key __slashslash_plugin_$plugin
