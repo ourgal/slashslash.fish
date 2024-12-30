@@ -60,7 +60,7 @@ function __slashslash_write_cells --description "Internal func to update the cel
   count $cell_names >> "$scratch"
   echo $PWD >> "$scratch"
   mv "$scratch" /tmp/slashslash_fish_cells_$pid
-  __slashslash_verbose "Successfully loaded cells for $PWD"
+  __slashslash_verbose "Successfully wrote cells for $PWD"
 end
 
 function __slashslash_load_cells --description "Internal func to load cells from disk"
@@ -73,7 +73,10 @@ function __slashslash_load_cells --description "Internal func to load cells from
     return 0
   end
 
-  test "$__slashslash_loaded_pwd" = "$PWD"; and return
+  if test "$__slashslash_loaded_pwd" = "$PWD"
+    __slashslash_verbose "// Not reloading, nothing changed"
+    return
+  end
 
   set loaded_data (cat /tmp/slashslash_fish_cells_$fish_pid 2>/dev/null)
   if test (count $loaded_data) -eq 0
@@ -83,6 +86,8 @@ function __slashslash_load_cells --description "Internal func to load cells from
 
   set loaded_pwd $loaded_data[-1]
   set n_cells $loaded_data[-2]
+
+  __slashslash_verbose "Loading $n_cells cells for $PWD"
 
   if test $n_cells -gt 0
     for i in (seq 1 $n_cells)
@@ -101,7 +106,9 @@ function __slashslash_load_cells --description "Internal func to load cells from
   set -g __slashslash_current_cells $cells
   set -g __slashslash_current_cell_paths $paths
   set -g __slashslash_current_cell_plugin_names $plugin_names
-  set -g __slashslash_loaded_pwd $loaded_data[-1]
+  set -g __slashslash_loaded_pwd $loaded_pwd
+
+  __slashslash_verbose "Successfully loaded $n_cells cells for $loaded_pwd"
   return 0
 end
 

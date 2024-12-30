@@ -315,6 +315,7 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     echo "ss cells"
     echo "ss cells [-r|reload]"
     echo "ss cells -a|-add NAME PATH [PRIORITY]"
+    echo "ss cells -d|--delete NAME"
     echo
     echo "Passing -a|-add adds a global cell that will exist no matter where your PWD is."
     echo "Optionally specify PRIORITY a non-negative integer to dictate which plugin should"
@@ -327,7 +328,9 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     echo
     echo "On the other hand specifying 0 indicates the specified cell should *only* be used as a fallback."
     echo
-    echo "Any cell added this way is added universally, meaning all fish instances will see these cells."
+    echo "Any cell added this way is added globally, meaning only this fish instance will see the new cell."
+    echo
+    echo "Passing -d|--delete will remove the global cell definition."
     echo
     echo "Passing -r|--reload force reloads the cells. Without any flags, prints the currently available cells."
     return 0
@@ -359,9 +362,30 @@ function __slashslash_cells_cmd --description "Query the currently available cel
       return 1
     end
 
-    set -Ua __slashslash_global_cells "$cell_name : $cell_path $cell_priority"
-    __slashslash_load_cells -r
+    set -ga __slashslash_global_cells "$cell_name : $cell_path $cell_priority"
     return 0
+  else if set -ql _flag_d
+    set cell_name $argv[1]
+    if test -z "$cell_name"
+      echo "E: Specify NAME of cell you want to delete" >&2
+      return 1
+    end
+    set n (count $__slashslash_global_cells)
+    if test $n -eq 0
+      echo "W: No cells registered, can't delete $cell_name" >&2
+      return 1
+    end
+
+    for idx in (seq 1 $n)
+      set spec $__slashslash_global_cells[$idx]
+      if string match -rq "^$cell_name\s" -- $spec
+        __slashslash_verbose "Deleting cell spec: $spec"
+        set -e __slashslash_global_cells[$idx]
+        return 0
+      end
+    end
+    echo "W: No cells named $cell_name registered" >&2
+    return 1
   end
 
   if set -ql _flag_r
