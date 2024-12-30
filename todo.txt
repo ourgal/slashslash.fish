@@ -1,3 +1,2 @@
 - why are you reloading when PWD doesn't change???
 - fix race when writing cells/loading cells
-- ss cells -r should still print

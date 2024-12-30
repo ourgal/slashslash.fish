@@ -333,12 +333,6 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     return 0
   end
 
-  if set -ql _flag_r
-    __slashslash_load_cells --reset
-    __slashslash_pwd_hook
-    return $status
-  end
-
   if set -ql _flag_a
     set cell_name $argv[1]
     set cell_path $argv[2]
@@ -368,6 +362,16 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     set -Ua __slashslash_global_cells "$cell_name : $cell_path $cell_priority"
     __slashslash_load_cells -r
     return 0
+  end
+
+  if set -ql _flag_r
+    __slashslash_load_cells --reset
+    set -q slashslash_sync; and set was_sync
+
+    set -g slashslash_sync
+    __slashslash_pwd_hook
+
+    set -q was_sync; or set -e slashslash_sync
   end
 
   __slashslash_load_cells
