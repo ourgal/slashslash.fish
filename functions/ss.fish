@@ -326,10 +326,13 @@ function __slashslash_cells_cmd --description "Query the currently available cel
   if test $n -ne (count $__slashslash_current_cell_paths)
     echo "Internal error: mismatch number of cells and paths" >&2
     return 1
+  else if test $n -ne (count $__slashslash_current_cell_plugin_names)
+    echo "Internal error: mismatch number of cells and cell plugin names" >&2
+    return 1
   end
   test $n -eq 0; and return 0
 
   for i in (seq 1 $n)
-    echo $__slashslash_current_cells[$i] : $__slashslash_current_cell_paths[$i]
+    echo $__slashslash_current_cells[$i] : $__slashslash_current_cell_paths[$i] '('$__slashslash_current_cell_plugin_names[$i]')'
   end
 end

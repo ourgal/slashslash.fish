@@ -4,12 +4,14 @@ function __slashslash_verbose
   set -q slashslash_verbose; and echo $argv >&2
 end
 
-function __slashslash_write_cells --description "Internal func to update the cells available for a given process" -a pid
+function __slashslash_write_cells --description "Internal func to update the cells available for a given process" -a pid -a n_plugins
   set -l pid_info (ps -p "$pid" 2>/dev/null); or return 1
   test (count $pid_info) -eq 2; or return 1
   string match -rq 'fish$' -- "$pid_info[2]"; or return 1
-  __slashslash_verbose Running plugins: $argv[2..]
-  for plugin in $argv[2..]
+  set -e argv[1..2]
+  for plug_idx in (seq 1 $n_plugins)
+    set plugin $argv[$plug_idx]
+    set plugin_name $argv[(math $plug_idx + $n_plugins)]
     for line in ($plugin)
       if not string match -rq '^\s*(?<cell>([a-zA-Z_0-9-]+|//))\s*:\s*(?<path>[^\s]+)(\s+(?<prio>\d+))?$' -- "$line"
         __slashslash_verbose "Unable to parse cell: $line"
@@ -21,25 +23,29 @@ function __slashslash_write_cells --description "Internal func to update the cel
       if set idx (contains -i -- "$cell" $cell_names)
         set other_path $cell_paths[$idx]
         set other_prio $cell_prios[$idx]
-        if test "$other_path" = "$path"
-          set cell_prios[$idx] (math "max($prio, $other_prio)")
-        else if test "$other_prio" -lt "$prio"
-          __slashslash_verbose "Overwriting $cell: $other_path < $path"
+        set other_name $cell_plugin_names[$idx]
+        if test "$other_prio" -lt "$prio"
+          __slashslash_verbose "Overwriting $cell: $other_path ($other_name) < $path ($plugin_name)"
           set cell_paths[$idx] "$path"
           set cell_prios[$idx] "$prio"
+          set cell_plugin_names[$idx] "$plugin_name"
         else
-          __slashslash_verbose "Not overwriting $cell: $other_path >= $path"
+          __slashslash_verbose "Not overwriting $cell: $other_path ($other_name) >= $path ($plugin_name)"
         end
         continue
       end
       set -af cell_names "$cell"
       set -af cell_paths "$path"
       set -af cell_prios "$prio"
+      set -af cell_plugin_names "$plugin_name"
     end
   end
   string join \n -- $cell_names > /tmp/slashslash_fish_cells_$pid
   string join \n -- $cell_paths >> /tmp/slashslash_fish_cells_$pid
+  string join \n -- $cell_plugin_names >> /tmp/slashslash_fish_cells_$pid
+  count $cell_names >> /tmp/slashslash_fish_cells_$pid
   echo $PWD >> /tmp/slashslash_fish_cells_$pid
+  __slashslash_verbose "Successfully loaded cells for $PWD"
 end
 
 function __slashslash_load_cells --description "Internal func to load cells from disk"
@@ -47,6 +53,7 @@ function __slashslash_load_cells --description "Internal func to load cells from
   if set -ql _flag_r
     set -e __slashslash_current_cells
     set -e __slashslash_current_cell_paths
+    set -e __slashslash_current_cell_plugin_names
     set -e __slashslash_loaded_pwd
     return 0
   end
@@ -54,31 +61,31 @@ function __slashslash_load_cells --description "Internal func to load cells from
   test "$__slashslash_loaded_pwd" = "$PWD"; and return
 
   set loaded_data (cat /tmp/slashslash_fish_cells_$fish_pid 2>/dev/null)
-  set n (count $loaded_data)
-  if test $n -eq 0
-    set -e __slashslash_current_cells
-    set -e __slashslash_current_cell_paths
+  if test (count $loaded_data) -eq 0
+    __slashslash_load_cells -r
     return 0
   end
 
-  if test (math $n % 2) -ne 1
-    __slashslash_verbose "Mismatch number of cells and paths"
-    return 1
-  end
+  set loaded_pwd $loaded_data[-1]
+  set n_cells $loaded_data[-2]
 
-  set n_cells (math "($n - 1) / 2")
-  for i in (seq 1 $n_cells)
-    set cell $loaded_data[$i]
-    set path $loaded_data[(math $n_cells + $i)]
-    if not string match -rq '.*//$' -- $cell
-      set cell "$cell//"
+  if test $n_cells -gt 0
+    for i in (seq 1 $n_cells)
+      set cell $loaded_data[$i]
+      set path $loaded_data[(math $n_cells + $i)]
+      set plugin_name $loaded_data[(math $n_cells + $n_cells + $i)]
+      if not string match -rq '.*//$' -- $cell
+        set cell "$cell//"
+      end
+      set -a cells "$cell"
+      set -a paths "$path"
+      set -a plugin_names "$plugin_name"
     end
-    set -a cells "$cell"
-    set -a paths "$path"
   end
 
   set -g __slashslash_current_cells $cells
   set -g __slashslash_current_cell_paths $paths
+  set -g __slashslash_current_cell_plugin_names $plugin_names
   set -g __slashslash_loaded_pwd $loaded_data[$n]
   return 0
 end
@@ -89,16 +96,19 @@ function __slashslash_invoke --description 'Expand any // and invoke'
   eval $cmd
 end
 
-function __slashslash_write_cell_script
+function __slashslash_gen_write_cells_script -a n_plugins
   functions --no-details __slashslash_verbose
   functions --no-details __slashslash_write_cells
-  for arg in $argv
-    functions --no-details "$arg"
+  set -e argv[1]
+  if test $n_plugins -gt 0
+    for i in (seq 1 $n_plugins)
+      functions --no-details "$argv[$i]"
+    end
   end
   if set -q slashslash_verbose
     echo 'set -g slashslash_verbose'
   end
-  echo "__slashslash_write_cells $fish_pid $argv"
+  echo "__slashslash_write_cells $fish_pid $n_plugins $argv"
 end
 
 function __slashslash_pwd_hook --on-variable PWD --description '// PWD change hook'
@@ -110,6 +120,7 @@ function __slashslash_pwd_hook --on-variable PWD --description '// PWD change ho
     set -l function_key __slashslash_plugin_$plugin
     set -qg $function_key; or continue
     set -af plugin_funcs $$function_key
+    set -af plugin_names $plugin
   end
 
   __slashslash_load_cells -r
@@ -121,7 +132,7 @@ function __slashslash_pwd_hook --on-variable PWD --description '// PWD change ho
   begin
     set -l IFS
     set -l shell_exe (status fish-path)
-    set -l shell_script (__slashslash_write_cell_script $plugin_funcs)
+    set -l shell_script (__slashslash_gen_write_cells_script (count $plugin_funcs) $plugin_funcs $plugin_names)
 
     __slashslash_verbose "Running under $shell_exe: `$shell_script`"
     if set -q slashslash_sync
