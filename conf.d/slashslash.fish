@@ -59,6 +59,7 @@ function __slashslash_write_cells --description "Internal func to update the cel
   string join \n -- $cell_names > "$scratch"
   string join \n -- $cell_paths >> "$scratch"
   string join \n -- $cell_plugin_names >> "$scratch"
+  echo $__slashslash_transaction >> "$scratch"
   count $cell_names >> "$scratch"
   echo $PWD >> "$scratch"
   mv "$scratch" /tmp/slashslash_fish_cells_$pid
@@ -89,6 +90,7 @@ function __slashslash_load_cells --description "Internal func to load cells from
 
   set loaded_pwd $loaded_data[-1]
   set n_cells $loaded_data[-2]
+  set transaction_id $loaded_data[-3]
 
   __slashslash_verbose "Loading $n_cells cells for $PWD"
 
@@ -109,7 +111,12 @@ function __slashslash_load_cells --description "Internal func to load cells from
   set -g __slashslash_current_cells $cells
   set -g __slashslash_current_cell_paths $paths
   set -g __slashslash_current_cell_plugin_names $plugin_names
-  set -g __slashslash_loaded_pwd $loaded_pwd
+
+  if test $transaction_id -lt $__slashslash_transaction
+    __slashslash_verbose "Still awaiting latest transaction, not caching loaded cells"
+  else
+    set -g __slashslash_loaded_pwd $loaded_pwd
+  end
 
   __slashslash_verbose "Successfully loaded $n_cells cells for $loaded_pwd"
   return 0
@@ -136,6 +143,7 @@ function __slashslash_gen_write_cells_script -a n_plugins
   for spec in $__slashslash_global_cells
     echo "set -ga __slashslash_global_cells '$spec'"
   end
+  echo "set -g __slashslash_transaction $__slashslash_transaction"
   echo "__slashslash_write_cells $fish_pid $n_plugins $argv"
 end
 
@@ -154,6 +162,8 @@ function __slashslash_pwd_hook --on-variable PWD --description '// PWD change ho
   end
 
   __slashslash_load_cells -r
+  set -g __slashslash_transaction (math $__slashslash_transaction + 1)
+  command kill -9 $__slashslash_last_loader_pid 2>/dev/null &; disown
 
   if set -q slashslash_verbose
     set -f inherited_env slashslash_verbose=1
@@ -169,6 +179,7 @@ function __slashslash_pwd_hook --on-variable PWD --description '// PWD change ho
       $shell_exe --no-config -c "$shell_script"
     else
       $shell_exe --no-config -c "$shell_script" &; disown
+      set -g __slashslash_last_loader_pid $last_pid
     end
   end
 end
