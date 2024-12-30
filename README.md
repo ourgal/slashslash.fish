@@ -4,9 +4,11 @@ TL;DR: This is a fish plugin that lets you remap `//` or `foo//` (for arbitrary 
 
 ---
 
-For now `//` will remap to:
+With this plugin you can remap `//` to:
 - The root of your current git/sapling/hg repo (if you're in one)
 - The root returned by `buck root` if you're in a buck workspace
+- Custom 'global' cells
+- Custom 'local' cells
 
 If your git repo lives at `/home/foo/bar`, then no matter where you are within that repo `//` will map to `/home/foo/bar`. For example
 ```
@@ -21,13 +23,21 @@ If your git repo lives at `/home/foo/bar`, then no matter where you are within t
 meow
 ```
 
-By default this expansion is enabled for the following commands: `cat`, `ls`, `cp`, `rm`, `mv`, `cd`, `zip`, `unzip`, `vim`, `nvim`, `vi`, `buck`, `sl`, `git`, `hg`, `grep`, `ack`
+If you've setup a global cell via `ss cells -a code $HOME/Code` then
+```
+> cd code//
+> pwd
+$HOME/code
 
-There's one special one too: `!!`. This command wraps `eval` so that you can expand arbitrary commands/args, e.g. within this repo the following works
+> ls code//  # the same thing as ls $HOME/Code
+
+> !! code//bin/script.sh  # the same thing as eval $HOME/Code/bin/script.sh
 ```
-> !! //bin/a.sh
-hi
-```
+
+The last command is defined within this plugin. `!!` simply wraps `eval`, but expands `//` in its args prior to executing. By default the following commands also expand their args prior to executing:
+
+> `cat`, `ls`, `cp`, `rm`, `mv`, `cd`, `zip`, `unzip`, `vim`,
+> `nvim`, `vi`, `buck`, `sl`, `git`, `hg`, `grep`, `ack`
 
 You get no warranty, good luck.
 
@@ -60,34 +70,33 @@ See `ss cells --help` for more info about priority.
 
 In buck workspaces buck cells will also automatically expand. So e.g. if you have a cell defined `foobar = path/to/foobar` then `foobar//` will expand to `$WORKSPACE_ROOT/path/to/foobar`, where `$WORKSPACE_ROOT` is the absolute root of the buck repo (i.e. not the curernt cell's root).
 
+### git/sl/hg
+
+For now there are no cells outside of the root `//`. This is because of a lack of imagination: I'm not sure what cell might be useful in a generic SCM repo.
 
 ## Installing
 
-### Manual
-
-Copy each of the contents of these folders into `~/.config/fish` (make sure to copy recursively)
-
 ### Fisher
 
-I have now confirmed this workflow works, yay!
 ```
 fisher install danzimm/slashslash.fish
 ```
 
-## Configuration
+### Manual
 
-### Defaults
+Copy each of the contents of `conf.d` and `functions` into `~/.config/fish`.
+
+## Controlling Expansion
 
 ### Disabling
 
-You can disable any of these by editing `conf.d/slashslash.fish` directly or specifying
+You can disable expanding `//` for any of the default commands by running
 ```
 ss disable cmd1 cmd2 ...
 ```
-to disable expansion for cmd1, cmd2, etc..
 
 ### Enabling
-You can enable additional commands which have `//` expansion by calling `slashslash` without any flags
+You can enable additional commands to expand `//` prior to execution by running
 ```
 ss secret_command
 ss enable secret_command_2
@@ -126,7 +135,7 @@ I don't use any other shell, and don't know if other shells have the required ho
 
 ### Your code is bad
 
-Yep, checks out. But hey, this isn't a question
+Yep, checks out. But hey, this isn't a question!
 
 ### Will you support X?
 
