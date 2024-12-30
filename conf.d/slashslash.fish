@@ -12,10 +12,23 @@ function __slashslash_write_cells --description "Internal func to update the cel
   for plug_idx in (seq 1 $n_plugins)
     set plugin $argv[$plug_idx]
     set plugin_name $argv[(math $plug_idx + $n_plugins)]
+    set real_plugin_name "$plugin_name"
+    set plugin_workspace
     for line in ($plugin)
+      if string match -rq '^__plugin_name__\s+(?<synth_name>.*)$' -- "$line"
+        set plugin_name "$real_plugin_name:$synth_name"
+        continue
+      end
+      if string match -rq '^__plugin_workspace__\s+(?<workspace_path>.*)$' -- "$line"
+        set plugin_workspace $workspace_path
+        continue
+      end
       if not string match -rq '^\s*(?<cell>([a-zA-Z_0-9-]+|//))\s*:\s*(?<path>[^\s]+)(\s+(?<prio>\d+))?$' -- "$line"
         __slashslash_verbose "Unable to parse cell: $line"
         continue
+      end
+      if test -n "$plugin_workspace"; and test (string sub -l 1 -- "$path") != "/"
+        set path "$plugin_workspace/$path"
       end
       if not set -q prio; or test -z "$prio"
         set prio 100
@@ -192,10 +205,24 @@ function __slashslash_global_cell_plugin
   end
 end
 
+function __slashslash_dotfile_plugin
+  set d "$PWD"
+  while not test "$d" = "/"
+    set f "$d/.ss"
+    if test -f "$f"
+      echo "__plugin_name__ $f"
+      echo "__plugin_workspace__ $d"
+      cat $f
+    end
+    set d (path dirname "$d")
+  end
+end
+
 ss plugin buck __slashslash_buck -c __slashslash_buck_completer -s __slashslash_buck_subpather
 ss plugin git __slashslash_git
 ss plugin hg __slashslash_hg
 ss plugin global __slashslash_global_cell_plugin
+ss plugin dotfile __slashslash_dotfile_plugin
 
 # Load cells for initial PWD
 __slashslash_pwd_hook
