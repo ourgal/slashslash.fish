@@ -38,7 +38,7 @@ function __slashslash_write_cells --description "Internal func to update the cel
     end
   end
   string join \n -- $cell_names > /tmp/slashslash_fish_cells_$pid
-  string join \n -- $cell_paths > /tmp/slashslash_fish_cell_paths_$pid
+  string join \n -- $cell_paths >> /tmp/slashslash_fish_cells_$pid
 end
 
 function __slashslash_load_cells --description "Internal func to load cells from disk"
@@ -46,22 +46,36 @@ function __slashslash_load_cells --description "Internal func to load cells from
   if set -ql _flag_r
     set -e __slashslash_current_cells
     set -e __slashslash_current_cell_paths
+    set -e __slashslash_loaded_pwd
     return 0
   end
 
   test "$__slashslash_loaded_pwd" = "$PWD"; and return
 
-  set -l paths (cat /tmp/slashslash_fish_cell_paths_$fish_pid 2>/dev/null)
-  for cell in (cat /tmp/slashslash_fish_cells_$fish_pid 2>/dev/null)
+  set loaded_data (cat /tmp/slashslash_fish_cells_$fish_pid 2>/dev/null)
+  set n (count $loaded_data)
+  if test $n -eq 0
+    set -e __slashslash_current_cells
+    set -e __slashslash_current_cell_paths
+    return 0
+  end
+
+  if test (math $n % 2) -ne 0
+    __slashslash_verbose "Mismatch number of cells and paths"
+    return 1
+  end
+
+  set n (math $n / 2)
+  for i in (seq 1 (math $n / 2))
+    set cell $loaded_data[$i]
+    set path $loaded_data[(math $n + $i)]
     if not string match -rq '.*//$' -- $cell
       set cell "$cell//"
     end
     set -a cells "$cell"
+    set -a paths "$path"
   end
-  if test (count $cells) -ne (count $paths)
-    __slashslash_verbose "Mismatch number of cells and paths"
-    return 1
-  end
+
   set -g __slashslash_current_cells $cells
   set -g __slashslash_current_cell_paths $paths
   set -g __slashslash_loaded_pwd "$PWD"
