@@ -1,2 +1,1 @@
-- implement global cells
 - implement local custom cells (e.g. inside .sscells)
