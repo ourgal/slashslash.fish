@@ -154,8 +154,12 @@ alias !! "eval"
 ss !! cat ls cp rm mv cd zip unzip vim nvim vi buck sl git hg grep ack
 
 # Builtin plugins
-function __slashslash_buck_complete -a cur
+function __slashslash_buck_completer -a cur
   command buck complete --target="$cur" 2>/dev/null | command grep -v ':$'
+end
+
+function __slashslash_buck_subpather -a cur
+  string replace -r '(?<!\\\\):(?!.*/)' / -- "$cur"
 end
 
 function __slashslash_buck
@@ -179,7 +183,7 @@ function __slashslash_hg
   echo "//:$root"
 end
 
-ss plugin buck __slashslash_buck -c __slashslash_buck_complete
+ss plugin buck __slashslash_buck -c __slashslash_buck_complete -s __slashslash_buck_subpather
 ss plugin git __slashslash_git
 ss plugin hg __slashslash_hg
 

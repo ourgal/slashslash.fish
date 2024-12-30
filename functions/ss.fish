@@ -170,7 +170,7 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
       if not functions -q "$_flag_s"
         echo -n "W: Ignoring $_flag_s: not a function. "(type $_flag_s) >&2
       else
-        set -g __slashslash_subpather_$name "$_flag_c"
+        set -g __slashslash_subpather_$name "$_flag_s"
       end
     end
 
@@ -256,8 +256,9 @@ function __slashslash_expand_cmd --description "Expand // based on current cells
     set -l plugin_name $__slashslash_current_cell_plugin_names[$idx]
     set -l root $__slashslash_current_cell_paths[$idx]
 
-    if functions -q __slashslash_subpather_$plugin_name
-      set new_subpath (__slashslash_subpather_$plugin_name "$subpath")
+    if set -q __slashslash_subpather_$plugin_name
+      set subpather __slashslash_subpather_$plugin_name
+      set new_subpath ($$subpather "$subpath")
       __slashslash_verbose "  expanded subpath $subpath > $new_subpath"
       set subpath "$new_subpath"
     end
