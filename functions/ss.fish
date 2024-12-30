@@ -19,6 +19,7 @@ function ss --description "Frontend to configure //. See ss --help"
     echo "  plugin -- enable/disable/list plugins"
     echo "  expand -- expand //"
     echo "  complete -- print completions of a given token after expanding //"
+    echo "  reload -- reload the current cells. Useful after editing .ss. Pass -a to load async"
     return 0
   end
 end
@@ -208,8 +209,7 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
     set -q __slashslash_verbose; and echo "Unregistered $name"
   end
   if not set -q _flag_n
-    __slashslash_load_cells -r
-    __slashslash_pwd_hook
+    __slashslash_reload_cmd -a
   end
   return 0
 end
@@ -235,6 +235,8 @@ function __slashslash_expand_cmd --description "Expand // based on current cells
     set -e __slashslash_expanding
     return 0
   end
+
+  test (realpath .) != "$PWD"; and set needs_abs
 
   __slashslash_load_cells
 
@@ -269,7 +271,14 @@ function __slashslash_expand_cmd --description "Expand // based on current cells
     set -l abs "$root/$subpath"
     __slashslash_verbose "  matched idx=$idx plugin=$plugin_name root=$root abs=$abs"
 
-    echo -n (realpath -s --relative-to=. "$abs")
+    if set -q needs_abs
+      # When we're inside a symlinked directory relative paths get weird, lets
+      # fallback to absolute.
+      echo -n (realpath "$abs")
+    else
+      echo -n (realpath -s --relative-to=. "$abs")
+    end
+
     # Use abs instead of $subpath so that when $subpath is empty
     # the match succeeds and we correctly get a trailing slash.
     string match -rq '/$' -- "$abs"; and echo -n "/"
@@ -377,8 +386,7 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     set -ga __slashslash_global_cells "$cell_name : $cell_path $cell_priority"
 
     if not set -q _flag_n
-      __slashslash_load_cells -r
-      __slashslash_pwd_hook
+      __slashslash_reload_cmd -a
     end
     return 0
   else if set -ql _flag_d
@@ -399,8 +407,7 @@ function __slashslash_cells_cmd --description "Query the currently available cel
         __slashslash_verbose "Deleting cell spec: $spec"
         set -e __slashslash_global_cells[$idx]
         if not set -q _flag_n
-          __slashslash_load_cells -r
-          __slashslash_pwd_hook
+          __slashslash_reload_cmd -a
         end
         return 0
       end
@@ -410,13 +417,7 @@ function __slashslash_cells_cmd --description "Query the currently available cel
   end
 
   if set -ql _flag_r
-    __slashslash_load_cells --reset
-    set -q slashslash_sync; and set was_sync
-
-    set -g slashslash_sync
-    __slashslash_pwd_hook
-
-    set -q was_sync; or set -e slashslash_sync
+    __slashslash_reload_cmd
   end
 
   __slashslash_load_cells
@@ -436,5 +437,22 @@ function __slashslash_cells_cmd --description "Query the currently available cel
 
   for i in (seq 1 $n)
     echo $__slashslash_current_cells[$i] : $__slashslash_current_cell_paths[$i] '('$__slashslash_current_cell_plugin_names[$i]')'
+  end
+end
+
+function __slashslash_reload_cmd
+  argparse a/async -- $argv; or return
+
+  __slashslash_load_cells --reset
+
+  if not set -q _flag_a
+    set -q slashslash_sync; and set -f was_sync
+    set -g slashslash_sync
+  end
+
+  __slashslash_pwd_hook
+
+  if not set -q _flag_a; and not set -q was_sync
+    set -e slashslash_sync
   end
 end
