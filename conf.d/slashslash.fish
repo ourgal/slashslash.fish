@@ -11,19 +11,22 @@ function __slashslash_write_cells --description "Internal func to update the cel
   __slashslash_verbose Running plugins: $argv[2..]
   for plugin in $argv[2..]
     for line in ($plugin)
-      if not string match -rq '^\s*(?<cell>([a-zA-Z_0-9-]+|//))\s*:\s*(?<path>[^\s]+)(\s*:(?<priority>-?\d+))?$' -- "$line"
+      if not string match -rq '^\s*(?<cell>([a-zA-Z_0-9-]+|//))\s*:\s*(?<path>[^\s]+)(\s+(?<prio>\d+))?$' -- "$line"
         __slashslash_verbose "Unable to parse cell: $line"
         continue
       end
-      if not set -q priority
-        set priority 1
+      if not set -q prio; or test -z "$prio"
+        set prio 100
       end
       if set idx (contains -i -- "$cell" $cell_names)
-        set other_prio $cell_prios[$idx]
         set other_path $cell_paths[$idx]
-        if test $other_prio -lt $priority
+        set other_prio $cell_prios[$idx]
+        if test "$other_path" = "$path"
+          set cell_prios[$idx] (math "max($prio, $other_prio)")
+        else if test "$other_prio" -lt "$prio"
           __slashslash_verbose "Overwriting $cell: $other_path < $path"
           set cell_paths[$idx] "$path"
+          set cell_prios[$idx] "$prio"
         else
           __slashslash_verbose "Not overwriting $cell: $other_path >= $path"
         end
@@ -31,6 +34,7 @@ function __slashslash_write_cells --description "Internal func to update the cel
       end
       set -af cell_names "$cell"
       set -af cell_paths "$path"
+      set -af cell_prios "$prio"
     end
   end
   string join \n -- $cell_names > /tmp/slashslash_fish_cells_$pid
@@ -60,7 +64,7 @@ function __slashslash_load_cells --description "Internal func to load cells from
   end
   set -g __slashslash_current_cells $cells
   set -g __slashslash_current_cell_paths $paths
-  set __slashslash_loaded_pwd "$PWD"
+  set -g __slashslash_loaded_pwd "$PWD"
   return 0
 end
 
@@ -133,13 +137,13 @@ end
 function __slashslash_buck
   type -q buck; or return
   set -l root (buck root 2>/dev/null); or return
-  echo "//: $root"
-  buck audit cell 2>/dev/null
+  echo "//: $root 200"
+  buck audit cell 2>/dev/null | sed 's|$| 200|'
 end
 
 function __slashslash_git
   set root (git rev-parse --show-toplevel 2>/dev/null); or return
-  echo "//:$root"
+  echo "//:$root 150"
 end
 
 function __slashslash_hg
