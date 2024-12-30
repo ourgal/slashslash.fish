@@ -11,12 +11,22 @@ function __slashslash_write_cells --description "Internal func to update the cel
   __slashslash_verbose Running plugins: $argv[2..]
   for plugin in $argv[2..]
     for line in ($plugin)
-      if not string match -rq '^\s*(?<cell>([a-zA-Z_0-9-]+|//))\s*:\s*(?<path>[^\s]+)$' -- "$line"
+      if not string match -rq '^\s*(?<cell>([a-zA-Z_0-9-]+|//))\s*:\s*(?<path>[^\s]+)(\s*:(?<priority>-?\d+))?$' -- "$line"
         __slashslash_verbose "Unable to parse cell: $line"
         continue
       end
-      if contains -- "$cell" $cell_names
-        __slashslash_verbose "Ignoring duplicate '$cell'"
+      if not set -q priority
+        set priority 1
+      end
+      if set idx (contains -i -- "$cell" $cell_names)
+        set other_prio $cell_prios[$idx]
+        set other_path $cell_paths[$idx]
+        if test $other_prio -lt $priority
+          __slashslash_verbose "Overwriting $cell: $other_path < $path"
+          set cell_paths[$idx] "$path"
+        else
+          __slashslash_verbose "Not overwriting $cell: $other_path >= $path"
+        end
         continue
       end
       set -af cell_names "$cell"
@@ -82,6 +92,8 @@ function __slashslash_pwd_hook --on-variable PWD --description '// PWD change ho
     set -qg $function_key; or continue
     set -af plugin_funcs $$function_key
   end
+
+  __slashslash_load_cells -r
 
   if set -q slashslash_verbose
     set -f inherited_env slashslash_verbose=1
