@@ -36,7 +36,7 @@ You get no warranty, good luck.
 ### Global
 
 You can define a global cell (meaning it exists no matter what your PWD is) via
-``
+```
 ss cells -a new_cell /path/to/whatever
 ```
 See `ss cells --help` for more info.
