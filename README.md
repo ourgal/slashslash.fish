@@ -1,8 +1,8 @@
 ## slashslash.fish: Expanding // in commands
 
----
-
 TL;DR: This is a fish plugin that lets you remap `//` or `foo//` (for arbitrary 'foo') to paths on disk. You can then enable this remapping logic for any command you'd like.
+
+---
 
 For now `//` will remap to:
 - The root of your current git/sapling/hg repo (if you're in one)
