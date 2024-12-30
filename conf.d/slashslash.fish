@@ -231,16 +231,25 @@ function __slashslash_global_cell_plugin
 end
 
 function __slashslash_dotfile_plugin
-  set d "$PWD"
-  while not test "$d" = "/"
+  function cat_ss_if_exists
+    set d "$argv[1]"
     set f "$d/.ss"
     if test -f "$f"
       echo "__plugin_name__ $f"
       echo "__plugin_workspace__ $d"
       cat $f
     end
+  end
+
+  set d "$PWD"
+  while not test "$d" = "/"
+    test "$d" = "$HOME"; and set did_home
+    cat_ss_if_exists "$d"
     set d (path dirname "$d")
   end
+  not set -q did_home; and cat_ss_if_exists "$HOME"
+
+  functions -e cat_ss_if_exists
 end
 
 ss plugin buck __slashslash_buck -c __slashslash_buck_completer -s __slashslash_buck_subpather
