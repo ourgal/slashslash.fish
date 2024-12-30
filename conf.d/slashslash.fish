@@ -133,9 +133,7 @@ function __slashslash_pwd_hook --on-variable PWD --description '// PWD change ho
 end
 
 function __slashslash_exit --on-event fish_exit
-  for f in /tmp/slashslash_fish_cells_$fish_pid /tmp/slashslash_fish_cell_paths_$fish_pid
-    test -f $f; and rm $f
-  end
+  test -f "/tmp/slashslash_fish_cells_$fish_pid"; and rm -f "/tmp/slashslash_fish_cells_$fish_pid"
 end
 
 # User can run e.g. `!! //foo/bar`
