@@ -37,7 +37,7 @@ $HOME/code
 The last command is defined within this plugin. `!!` simply wraps `eval`, but expands `//` in its args prior to executing. By default the following commands also expand their args prior to executing:
 
 > `cat`, `ls`, `cp`, `rm`, `mv`, `cd`, `zip`, `unzip`, `vim`,
-> `nvim`, `vi`, `buck`, `sl`, `git`, `hg`, `grep`, `ack`
+> `nvim`, `vi`, `buck`, `sl`, `git`, `hg`, `grep`, `ack`, `rsync`
 
 You get no warranty, good luck.
 
