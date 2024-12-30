@@ -192,7 +192,7 @@ end
 alias !! "eval"
 
 # Setup defaults: user can disable with ss disable
-ss !! cat ls cp rm mv cd zip unzip vim nvim vi buck sl git hg grep ack
+ss enable !! cat ls cp rm mv cd zip unzip vim nvim vi buck sl git hg grep ack
 
 # Builtin plugins
 function __slashslash_buck_completer -a cur
@@ -248,6 +248,8 @@ ss plugin git __slashslash_git
 ss plugin hg __slashslash_hg
 ss plugin global __slashslash_global_cell_plugin
 ss plugin dotfile __slashslash_dotfile_plugin
+
+ss cells -a -n fish_config $HOME/.config/fish
 
 # Load cells for initial PWD
 set -e __slashslash_init

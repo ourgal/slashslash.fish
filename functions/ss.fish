@@ -1,9 +1,12 @@
 function ss --description "Frontend to configure //. See ss --help"
-  if test (count $argv) -ne 0
+  if test (count $argv) -ne 0; and not string match -q -- '-*' $argv[1]
     set subcmd __slashslash_$argv[1]_cmd
     if functions -q $subcmd
       $subcmd $argv[2..]
       return $status
+    else
+      echo "Unknown subcommand: $argv[1]" >&2
+      return 1
     end
   end
 
@@ -16,12 +19,8 @@ function ss --description "Frontend to configure //. See ss --help"
     echo "  plugin -- enable/disable/list plugins"
     echo "  expand -- expand //"
     echo "  complete -- print completions of a given token after expanding //"
-    echo
-    echo "Defaults to 'enable' if not subcommand specified"
     return 0
   end
-
-  __slashslash_enable_cmd $argv
 end
 
 function __slashslash_disable_cmd
@@ -85,7 +84,7 @@ function __slashslash_enable_cmd
 end
 
 function __slashslash_plugin_cmd --description "Enable/disable slashslash plugins"
-  argparse h/help u/unregister l/list v/verbose c/complete= s/subpath= -- $argv; or return
+  argparse h/help u/unregister l/list v/verbose c/complete= s/subpath= n/no-reload -- $argv; or return
 
   if set -ql _flag_l
     if not set -qg __slashslash_plugins
@@ -114,8 +113,8 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
   if set -ql _flag_h; or test (count $argv) -eq 0
     echo "Usage:"
     echo "ss plugin [-h|--help]"
-    echo "ss plugin [-c|--complete COMPLETE_CALLBACK] [-s|--subpath SUBPATH_CALLBACK] NAME CALLBACK"
-    echo "ss plugin -u|--unregister NAME"
+    echo "ss plugin [-n|--no-reload] [-c|--complete COMPLETE_CALLBACK] [-s|--subpath SUBPATH_CALLBACK] NAME CALLBACK"
+    echo "ss plugin [-n|--no-reload] -u|--unregister NAME"
     echo "ss plugin -l|--list -v|--verbose"
     echo
     echo "The default command registers/unregisters a plugin named NAME with callback CALLBACK."
@@ -208,8 +207,10 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
 
     set -q __slashslash_verbose; and echo "Unregistered $name"
   end
-  __slashslash_load_cells -r
-  __slashslash_pwd_hook
+  if not set -q _flag_n
+    __slashslash_load_cells -r
+    __slashslash_pwd_hook
+  end
   return 0
 end
 
@@ -309,15 +310,15 @@ function __slashslash_complete_cmd -a cur --description "Print completions for a
 end
 
 function __slashslash_cells_cmd --description "Query the currently available cells. Pass -r/--reload to reload"
-  argparse r/reload h/help a/add d/delete -- $argv; or return
+  argparse r/reload h/help a/add d/delete n/no-reload -- $argv; or return
 
   if set -ql _flag_h
     echo "Usage:"
     echo "ss cells [-h|--help]"
     echo "ss cells"
     echo "ss cells [-r|reload]"
-    echo "ss cells -a|-add NAME PATH [PRIORITY]"
-    echo "ss cells -d|--delete NAME"
+    echo "ss cells [-n|--noreload] -a|-add NAME PATH [PRIORITY]"
+    echo "ss cells [-n|--noreload] -d|--delete NAME"
     echo
     echo "Passing -a|-add adds a global cell that will exist no matter where your PWD is."
     echo "Optionally specify PRIORITY a non-negative integer to dictate which plugin should"
@@ -333,6 +334,8 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     echo "Any cell added this way is added globally, meaning only this fish instance will see the new cell."
     echo
     echo "Passing -d|--delete will remove the global cell definition."
+    echo
+    echo "Passing -n|--no-reload will disable reloading cells. This is helpful for startup perf"
     echo
     echo "Passing -r|--reload force reloads the cells. Without any flags, prints the currently available cells."
     return 0
@@ -372,8 +375,11 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     end
 
     set -ga __slashslash_global_cells "$cell_name : $cell_path $cell_priority"
-    __slashslash_load_cells -r
-    __slashslash_pwd_hook
+
+    if not set -q _flag_n
+      __slashslash_load_cells -r
+      __slashslash_pwd_hook
+    end
     return 0
   else if set -ql _flag_d
     set cell_name $argv[1]
@@ -392,8 +398,10 @@ function __slashslash_cells_cmd --description "Query the currently available cel
       if string match -rq "^$cell_name\s" -- $spec
         __slashslash_verbose "Deleting cell spec: $spec"
         set -e __slashslash_global_cells[$idx]
-        __slashslash_load_cells -r
-        __slashslash_pwd_hook
+        if not set -q _flag_n
+          __slashslash_load_cells -r
+          __slashslash_pwd_hook
+        end
         return 0
       end
     end
