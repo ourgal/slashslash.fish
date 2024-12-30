@@ -39,6 +39,7 @@ function __slashslash_write_cells --description "Internal func to update the cel
   end
   string join \n -- $cell_names > /tmp/slashslash_fish_cells_$pid
   string join \n -- $cell_paths >> /tmp/slashslash_fish_cells_$pid
+  echo $PWD >> /tmp/slashslash_fish_cells_$pid
 end
 
 function __slashslash_load_cells --description "Internal func to load cells from disk"
@@ -60,15 +61,15 @@ function __slashslash_load_cells --description "Internal func to load cells from
     return 0
   end
 
-  if test (math $n % 2) -ne 0
+  if test (math $n % 2) -ne 1
     __slashslash_verbose "Mismatch number of cells and paths"
     return 1
   end
 
-  set n (math $n / 2)
-  for i in (seq 1 (math $n / 2))
+  set n_cells (math "($n - 1) / 2")
+  for i in (seq 1 $n_cells)
     set cell $loaded_data[$i]
-    set path $loaded_data[(math $n + $i)]
+    set path $loaded_data[(math $n_cells + $i)]
     if not string match -rq '.*//$' -- $cell
       set cell "$cell//"
     end
@@ -78,7 +79,7 @@ function __slashslash_load_cells --description "Internal func to load cells from
 
   set -g __slashslash_current_cells $cells
   set -g __slashslash_current_cell_paths $paths
-  set -g __slashslash_loaded_pwd "$PWD"
+  set -g __slashslash_loaded_pwd $loaded_data[$n]
   return 0
 end
 
