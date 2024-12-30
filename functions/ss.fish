@@ -5,7 +5,7 @@ function ss --description "Frontend to configure //. See ss --help"
       $subcmd $argv[2..]
       return $status
     else
-      echo "Unknown subcommand: $argv[1]" >&2
+      echo "ss: Unknown subcommand: $argv[1]" >&2
       return 1
     end
   end

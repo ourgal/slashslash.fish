@@ -249,7 +249,7 @@ ss plugin hg __slashslash_hg
 ss plugin global __slashslash_global_cell_plugin
 ss plugin dotfile __slashslash_dotfile_plugin
 
-ss cells -a -n fish_config $HOME/.config/fish
+ss cells -a -n fish_config "$__fish_config_dir" 0
 
 # Load cells for initial PWD
 set -e __slashslash_init
