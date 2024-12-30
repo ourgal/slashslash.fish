@@ -101,7 +101,7 @@ function __slashslash_load_cells --description "Internal func to load cells from
   set -g __slashslash_current_cells $cells
   set -g __slashslash_current_cell_paths $paths
   set -g __slashslash_current_cell_plugin_names $plugin_names
-  set -g __slashslash_loaded_pwd $loaded_data[$n]
+  set -g __slashslash_loaded_pwd $loaded_data[-1]
   return 0
 end
 
