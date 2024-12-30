@@ -108,6 +108,9 @@ function __slashslash_gen_write_cells_script -a n_plugins
   if set -q slashslash_verbose
     echo 'set -g slashslash_verbose'
   end
+  for spec in $__slashslash_global_cells
+    echo "set -ga __slashslash_global_cells '$spec'"
+  end
   echo "__slashslash_write_cells $fish_pid $n_plugins $argv"
 end
 
@@ -183,9 +186,16 @@ function __slashslash_hg
   echo "//:$root"
 end
 
-ss plugin buck __slashslash_buck -c __slashslash_buck_complete -s __slashslash_buck_subpather
+function __slashslash_global_cell_plugin
+  for spec in $__slashslash_global_cells
+    echo $spec
+  end
+end
+
+ss plugin buck __slashslash_buck -c __slashslash_buck_completer -s __slashslash_buck_subpather
 ss plugin git __slashslash_git
 ss plugin hg __slashslash_hg
+ss plugin global __slashslash_global_cell_plugin
 
 # Load cells for initial PWD
 __slashslash_pwd_hook

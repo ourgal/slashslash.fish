@@ -29,7 +29,7 @@ function __slashslash_disable_cmd
 
   if set -q _flag_h
     echo "Usage:"
-    echo "slashslash disable CMD [CMD [CMD ..]]"
+    echo "ss disable CMD [CMD [CMD ..]]"
     echo
     echo "Disable expanding // for CMD(s)"
     return 0
@@ -56,7 +56,7 @@ function __slashslash_enable_cmd
 
   if set -q _flag_h
     echo "Usage:"
-    echo "slashslash enable CMD [CMD [CMD ..]]"
+    echo "ss enable CMD [CMD [CMD ..]]"
     echo
     echo "Enable expanding // for CMD(s)"
     return 0
@@ -113,10 +113,10 @@ function __slashslash_plugin_cmd --description "Enable/disable slashslash plugin
 
   if set -ql _flag_h; or test (count $argv) -eq 0
     echo "Usage:"
-    echo "slashslash plugin [-h|--help]"
-    echo "slashslash plugin [-c|--complete COMPLETE_CALLBACK] [-s|--subpath SUBPATH_CALLBACK] NAME CALLBACK"
-    echo "slashslash plugin -u|--unregister NAME"
-    echo "slashslash plugin -l|--list -v|--verbose"
+    echo "ss plugin [-h|--help]"
+    echo "ss plugin [-c|--complete COMPLETE_CALLBACK] [-s|--subpath SUBPATH_CALLBACK] NAME CALLBACK"
+    echo "ss plugin -u|--unregister NAME"
+    echo "ss plugin -l|--list -v|--verbose"
     echo
     echo "The default command registers/unregisters a plugin named NAME with callback CALLBACK."
     echo "The optional -c|--complete flag specifies a callback to be called with a token that"
@@ -307,14 +307,29 @@ function __slashslash_complete_cmd -a cur --description "Print completions for a
 end
 
 function __slashslash_cells_cmd --description "Query the currently available cells. Pass -r/--reload to reload"
-  argparse r/reload h/help -- $argv; or return
+  argparse r/reload h/help a/add -- $argv; or return
 
   if set -ql _flag_h
     echo "Usage:"
-    echo "slashslash cells [-h|--help]"
-    echo "slashslash cells [-r|reload]"
+    echo "ss cells [-h|--help]"
+    echo "ss cells"
+    echo "ss cells [-r|reload]"
+    echo "ss cells -a|-add NAME PATH [PRIORITY]"
     echo
-    echo "Prints the currently available cells. Passing -r|--reload force reloads the cells"
+    echo "Passing -a|-add adds a global cell that will exist no matter where your PWD is."
+    echo "Optionally specify PRIORITY a non-negative integer to dictate which plugin should"
+    echo "be used when multiple plugins declare the same cell. Defaults to 50 when unspecified."
+    echo
+    echo "The default priority across plugins is 100. git defaults to 150 and buck defaults to 200."
+    echo
+    echo "For example specifying priority 1000 indicates the given cell should override (essentially)"
+    echo "any other definition of that cell by any other plugin."
+    echo
+    echo "On the other hand specifying 0 indicates the specified cell should *only* be used as a fallback."
+    echo
+    echo "Any cell added this way is added universally, meaning all fish instances will see these cells."
+    echo
+    echo "Passing -r|--reload force reloads the cells. Without any flags, prints the currently available cells."
     return 0
   end
 
@@ -322,6 +337,37 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     __slashslash_load_cells --reset
     __slashslash_pwd_hook
     return $status
+  end
+
+  if set -ql _flag_a
+    set cell_name $argv[1]
+    set cell_path $argv[2]
+    set cell_priority $argv[3]
+
+    if test -z "$cell_name"
+      echo "E: Require non-empty NAME. See ss cells --help" >&2
+      return 1
+    else if test -z "$cell_path"
+      echo "E: Require non-empty PATH See ss cells --help" >&2
+      return 1
+    else if test -z "$cell_priority"
+      set cell_priority 50
+    end
+
+    if not string match -rq '\d+' -- "$cell_priority"
+      echo "E: PRIORITY must be non-negative integer. See ss cells --help" >&2
+      return 1
+    else if not string match -rq '[a-zA-Z_0-9-]+|//' -- "$cell_name"
+      echo "E: Invalid NAME '$cell_name'. Must match [a-zA-Z_0-9-]+|//" >&2
+      return 1
+    else if not string match -rq '[^\s]+' -- "$cell_path"
+      echo "E: Invalid PATH '$cell_path'. Must match [^\s]+" >&2
+      return 1
+    end
+
+    set -Ua __slashslash_global_cells "$cell_name : $cell_path $cell_priority"
+    __slashslash_load_cells -r
+    return 0
   end
 
   __slashslash_load_cells
