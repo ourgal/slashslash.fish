@@ -55,7 +55,7 @@ function __slashslash_load_cells --description "Internal func to load cells from
 end
 
 function __slashslash_invoke --description 'Expand any // and invoke'
-  set -f cmd (slashslash expand (string escape -- $argv))
+  set -f cmd (__slashslash_expand_cmd (string escape -- $argv))
   __slashslash_verbose "//> $cmd"
   eval $cmd
 end
@@ -107,11 +107,11 @@ function __slashslash_exit --on-event fish_exit
   end
 end
 
-# User can run e.g. `ss //foo/bar`
-alias ss "eval"
+# User can run e.g. `!! //foo/bar`
+alias !! "eval"
 
-# Setup defaults: user can disable with slashslash -d|--disable CMD
-slashslash ss cat ls cp rm mv cd zip unzip vim nvim vi buck sl git hg grep ack
+# Setup defaults: user can disable with ss disable
+ss !! cat ls cp rm mv cd zip unzip vim nvim vi buck sl git hg grep ack
 
 # Builtin plugins
 function __slashslash_buck_complete -a cur
@@ -139,9 +139,9 @@ function __slashslash_hg
   echo "//:$root"
 end
 
-slashslash plugin buck __slashslash_buck -c __slashslash_buck_complete
-slashslash plugin git __slashslash_git
-slashslash plugin hg __slashslash_hg
+ss plugin buck __slashslash_buck -c __slashslash_buck_complete
+ss plugin git __slashslash_git
+ss plugin hg __slashslash_hg
 
 # Load cells for initial PWD
 __slashslash_pwd_hook

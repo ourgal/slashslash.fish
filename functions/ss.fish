@@ -1,4 +1,4 @@
-function slashslash --description 'Initialize // handling for the specified commands/functions'
+function ss --description "Frontend to configure //. See ss --help"
   if test (count $argv) -ne 0
     set subcmd __slashslash_$argv[1]_cmd
     if functions -q $subcmd
