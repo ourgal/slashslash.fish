@@ -1,4 +1,6 @@
 function ss --description "Frontend to configure //. See ss --help"
+  status is-interactive; or return
+
   if test (count $argv) -ne 0; and not string match -q -- '-*' $argv[1]
     set subcmd __slashslash_$argv[1]_cmd
     if functions -q $subcmd
