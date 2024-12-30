@@ -240,7 +240,7 @@ function __slashslash_expand_cmd --description "Expand // based on current cells
       echo "$arg"
       continue
     end
-    __slashslash_verbose "processing $arg"
+    __slashslash_verbose "// Expanding '$arg'"
 
     # Is there // somewhere in this arg?
     if not string match -rq '^(?<cell>[^/\s]*//)(?<subpath>[^\s]*)$' -- $arg
@@ -252,12 +252,18 @@ function __slashslash_expand_cmd --description "Expand // based on current cells
       echo "$arg"
       continue
     end
-    __slashslash_verbose "idx=$idx"
 
+    set -l plugin_name $__slashslash_current_cell_plugin_names[$idx]
     set -l root $__slashslash_current_cell_paths[$idx]
-    __slashslash_verbose "root=$root"
+
+    if functions -q __slashslash_subpather_$plugin_name
+      set new_subpath (__slashslash_subpather_$plugin_name "$subpath")
+      __slashslash_verbose "  expanded subpath $subpath > $new_subpath"
+      set subpath "$new_subpath"
+    end
+
     set -l abs "$root/$subpath"
-    __slashslash_verbose "abs=$abs"
+    __slashslash_verbose "  matched idx=$idx plugin=$plugin_name root=$root abs=$abs"
 
     echo -n (realpath -s --relative-to=. "$abs")
     # Use abs instead of $subpath so that when $subpath is empty
