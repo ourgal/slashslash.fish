@@ -307,7 +307,7 @@ function __slashslash_complete_cmd -a cur --description "Print completions for a
 end
 
 function __slashslash_cells_cmd --description "Query the currently available cells. Pass -r/--reload to reload"
-  argparse r/reload h/help a/add -- $argv; or return
+  argparse r/reload h/help a/add d/delete -- $argv; or return
 
   if set -ql _flag_h
     echo "Usage:"
@@ -360,6 +360,13 @@ function __slashslash_cells_cmd --description "Query the currently available cel
     else if not string match -rq '[^\s]+' -- "$cell_path"
       echo "E: Invalid PATH '$cell_path'. Must match [^\s]+" >&2
       return 1
+    end
+
+    for spec in $__slashslash_global_cells
+      if string match -rq "^$cell_name\s" -- $spec
+        echo "E: $cell_name already registered: $spec" >&2
+        return 1
+      end
     end
 
     set -ga __slashslash_global_cells "$cell_name : $cell_path $cell_priority"
